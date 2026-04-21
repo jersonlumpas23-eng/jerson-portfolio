@@ -1,6 +1,13 @@
 "use client";
 
-import { motion, useInView, useScroll, useTransform } from "framer-motion";
+import {
+  motion,
+  useInView,
+  useScroll,
+  useTransform,
+  useSpring,
+  AnimatePresence,
+} from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import {
   Github,
@@ -11,12 +18,13 @@ import {
   ExternalLink,
   ArrowDown,
   ChevronRight,
-  MapPin,
   Trophy,
   Heart,
   Smartphone,
   Globe,
   Sparkles,
+  MapPin,
+  Code2,
 } from "lucide-react";
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
@@ -31,7 +39,7 @@ const NAV_LINKS = [
 const PROJECTS = [
   {
     id: "aolc-web",
-    icon: <Globe size={20} />,
+    icon: <Globe size={18} />,
     category: "Full-Stack Web App",
     categoryStyle: "bg-primary/10 text-primary",
     title: "Acts of Love Community",
@@ -50,18 +58,17 @@ const PROJECTS = [
     live: "https://actsoflovecommunitybeta.site",
     github: null,
     badge: null,
-    accentClass: "from-primary/5 to-primary/10",
-    borderHover: "hover:border-primary/30",
+    glowColor: "rgba(107,149,196,0.12)",
   },
   {
     id: "aolc-mobile",
-    icon: <Smartphone size={20} />,
+    icon: <Smartphone size={18} />,
     category: "Mobile App",
     categoryStyle: "bg-accent/20 text-yellow-700",
     title: "Acts of Love Community",
     subtitle: "Mobile App",
     description:
-      "Companion native app to the AOLC web platform. Built from the ground up with Expo, featuring biometric auth, QR scanning, and a real-time activity feed for volunteers on the go.",
+      "Companion native app to the AOLC web platform. Biometric auth, QR scanning, real-time activity feeds — built with Expo for volunteers on the go.",
     features: [
       "Biometric authentication (Face ID / fingerprint)",
       "QR code scanner for event check-in",
@@ -74,18 +81,17 @@ const PROJECTS = [
     live: "https://actsoflovecommunitybeta.site",
     github: null,
     badge: null,
-    accentClass: "from-accent/5 to-accent/10",
-    borderHover: "hover:border-accent/40",
+    glowColor: "rgba(242,204,90,0.12)",
   },
   {
     id: "lumba",
-    icon: <Trophy size={20} />,
-    category: "Mobile App · Personal Project",
-    categoryStyle: "bg-teal-50 text-teal-700",
+    icon: <Trophy size={18} />,
+    category: "Mobile App · Personal",
+    categoryStyle: "bg-teal-100/60 text-teal-700",
     title: "Lumba",
     subtitle: "Pickup Volleyball App",
     description:
-      "Built out of personal frustration finding pickup games across 10+ Facebook groups. Lumba is a free-to-install app for Filipino volleyball players — with real game discovery, skill matching, and community features.",
+      "Built out of personal frustration finding pickup games across 10+ Facebook groups. A free-to-install app for Filipino volleyball players — with real game discovery, skill matching, and community features.",
     features: [
       "Map-based pickup game discovery",
       "Real-time in-game chat",
@@ -98,8 +104,7 @@ const PROJECTS = [
     live: null,
     github: "https://github.com/jersonlumpas23-eng/lumba",
     badge: "✨ First Mobile App",
-    accentClass: "from-teal-50/50 to-teal-50",
-    borderHover: "hover:border-teal-200",
+    glowColor: "rgba(20,184,166,0.10)",
   },
 ];
 
@@ -108,42 +113,42 @@ const SKILL_GROUPS = [
     label: "Languages",
     icon: "{ }",
     color: "text-primary",
-    bg: "bg-primary/8",
+    bg: "bg-primary/10",
     skills: ["TypeScript", "PHP", "JavaScript", "SQL"],
   },
   {
     label: "Frontend",
     icon: "◻",
     color: "text-primary",
-    bg: "bg-primary/8",
+    bg: "bg-primary/10",
     skills: ["Vue 3", "React Native", "Expo", "Tailwind CSS", "NativeWind", "Inertia.js"],
   },
   {
     label: "Backend",
     icon: "⚡",
-    color: "text-accent",
-    bg: "bg-accent/10",
+    color: "text-yellow-600",
+    bg: "bg-accent/15",
     skills: ["Laravel 12", "Supabase", "Node.js"],
   },
   {
     label: "Database",
     icon: "▤",
     color: "text-primary",
-    bg: "bg-primary/8",
+    bg: "bg-primary/10",
     skills: ["MySQL", "PostgreSQL", "Redis"],
   },
   {
     label: "Mobile",
     icon: "▣",
     color: "text-teal-600",
-    bg: "bg-teal-50",
+    bg: "bg-teal-100/60",
     skills: ["React Native", "Expo SDK", "RevenueCat", "AdMob", "expo-router", "EAS Build"],
   },
   {
     label: "Tools & Other",
     icon: "◈",
-    color: "text-accent",
-    bg: "bg-accent/10",
+    color: "text-yellow-600",
+    bg: "bg-accent/15",
     skills: ["Git", "GitHub", "Figma", "WebSockets", "REST APIs", "Row-Level Security", "PayMongo"],
   },
 ];
@@ -155,31 +160,50 @@ const SOCIALS = [
   { icon: Twitch, href: "https://www.twitch.tv/shoyobabi", label: "Twitch" },
 ];
 
-// ─── ANIMATION HELPERS ───────────────────────────────────────────────────────
+const TAGS = [
+  { icon: <MapPin size={12} />, label: "Philippines" },
+  { icon: <Trophy size={12} />, label: "Volleyball Player" },
+  { icon: <Code2 size={12} />, label: "Vibe Coder" },
+  { icon: <Heart size={12} />, label: "Community Builder" },
+  { icon: <Sparkles size={12} />, label: "Solo Dev" },
+];
+
+// ─── ANIMATION VARIANTS ───────────────────────────────────────────────────────
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 28 },
+  hidden: { opacity: 0, y: 32, filter: "blur(4px)" },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] },
+    filter: "blur(0px)",
+    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+const fadeIn = {
+  hidden: { opacity: 0, scale: 0.96 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
   },
 };
 
 const stagger = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.09 } },
+  visible: { transition: { staggerChildren: 0.1 } },
 };
 
-function Section({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+const staggerFast = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.065 } },
+};
+
+// ─── COMPONENTS ───────────────────────────────────────────────────────────────
+
+function Section({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const inView = useInView(ref, { once: true, margin: "-70px" });
   return (
     <motion.div
       ref={ref}
@@ -193,86 +217,217 @@ function Section({
   );
 }
 
-// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
+function ProjectCard({ p, index }: { p: (typeof PROJECTS)[0]; index: number }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <motion.article
+      variants={fadeUp}
+      transition={{ delay: index * 0.1 }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        boxShadow: hovered
+          ? `0 20px 50px ${p.glowColor}, 0 4px 20px rgba(0,0,0,0.06)`
+          : "0 2px 8px rgba(0,0,0,0.04)",
+      }}
+      className="group relative bg-white rounded-3xl p-6 border border-ink/5 hover:border-primary/20 transition-all duration-400 flex flex-col cursor-default"
+    >
+      {/* Top glow accent */}
+      <motion.div
+        animate={{ opacity: hovered ? 1 : 0 }}
+        transition={{ duration: 0.3 }}
+        className="absolute inset-x-0 top-0 h-1 rounded-t-3xl bg-gradient-to-r from-primary/60 via-primary to-accent/60"
+      />
+
+      {/* Category + badge */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${p.categoryStyle}`}>
+          {p.icon}
+          {p.category}
+        </span>
+        {p.badge && (
+          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-accent/20 text-yellow-700">
+            {p.badge}
+          </span>
+        )}
+      </div>
+
+      <h3 className="font-display font-extrabold text-xl text-ink leading-tight mb-0.5">
+        {p.title}
+      </h3>
+      <p className="text-primary font-semibold text-sm mb-4">{p.subtitle}</p>
+      <p className="text-ink/50 text-sm leading-relaxed mb-5 flex-1">{p.description}</p>
+
+      {/* Features */}
+      <ul className="space-y-2 mb-5">
+        {p.features.slice(0, 4).map((f, i) => (
+          <motion.li
+            key={f}
+            initial={{ opacity: 0, x: -8 }}
+            animate={hovered ? { opacity: 1, x: 0 } : { opacity: 0.6, x: 0 }}
+            transition={{ duration: 0.25, delay: i * 0.04 }}
+            className="flex items-start gap-2 text-xs text-ink/55"
+          >
+            <span className="mt-[5px] w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+            {f}
+          </motion.li>
+        ))}
+        {p.features.length > 4 && (
+          <li className="text-xs text-ink/30 pl-3.5">+{p.features.length - 4} more</li>
+        )}
+      </ul>
+
+      {/* Tech pills */}
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        {p.tech.slice(0, 5).map((t) => (
+          <span key={t} className="text-[11px] font-semibold bg-[#E8EBF4] text-ink/55 px-2.5 py-1 rounded-full">
+            {t}
+          </span>
+        ))}
+        {p.tech.length > 5 && (
+          <span className="text-[11px] font-semibold bg-[#E8EBF4] text-ink/30 px-2.5 py-1 rounded-full">
+            +{p.tech.length - 5}
+          </span>
+        )}
+      </div>
+
+      {/* Links */}
+      <div className="flex items-center gap-4 pt-4 border-t border-ink/6">
+        {p.live && (
+          <a
+            href={p.live}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/70 transition-colors"
+          >
+            <ExternalLink size={13} />
+            Live Site
+          </a>
+        )}
+        {p.github && (
+          <a
+            href={p.github}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink/40 hover:text-ink transition-colors"
+          >
+            <Github size={13} />
+            GitHub
+          </a>
+        )}
+      </div>
+    </motion.article>
+  );
+}
+
+// ─── MAIN ─────────────────────────────────────────────────────────────────────
 
 export default function Portfolio() {
   const [scrolled, setScrolled] = useState(false);
 
+  // Parallax on hero orbs
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const orbY1 = useTransform(scrollYProgress, [0, 1], [0, -80]);
+  const orbY2 = useTransform(scrollYProgress, [0, 1], [0, -50]);
+  const orbY3 = useTransform(scrollYProgress, [0, 1], [0, -30]);
+
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const fn = () => setScrolled(window.scrollY > 24);
+    window.addEventListener("scroll", fn, { passive: true });
+    return () => window.removeEventListener("scroll", fn);
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#F8F9FC] text-ink overflow-x-hidden">
+    <main className="min-h-screen bg-[#E8EBF4] text-ink overflow-x-hidden">
 
       {/* ── NAV ─────────────────────────────────────────────────────────── */}
       <header
-        className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
-          scrolled ? "bg-white/80 backdrop-blur-md shadow-sm shadow-ink/5" : "bg-transparent"
+        className={`fixed top-0 inset-x-0 z-50 transition-all duration-400 ${
+          scrolled
+            ? "bg-white/75 backdrop-blur-xl shadow-sm shadow-ink/5 border-b border-ink/5"
+            : "bg-transparent"
         }`}
       >
         <div className="max-w-6xl mx-auto px-6 md:px-10 h-16 flex items-center justify-between">
           <motion.a
             href="#"
-            className="font-display font-extrabold text-xl text-ink"
             initial={{ opacity: 0, x: -16 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
+            className="font-display font-extrabold text-xl text-ink"
           >
             JL<span className="text-primary">.</span>
           </motion.a>
 
           <motion.nav
-            className="hidden md:flex items-center gap-8"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={{ duration: 0.5, delay: 0.12 }}
+            className="hidden md:flex items-center gap-8"
           >
-            {NAV_LINKS.map((l) => (
-              <a
+            {NAV_LINKS.map((l, i) => (
+              <motion.a
                 key={l.label}
                 href={l.href}
-                className="text-sm font-medium text-ink/50 hover:text-primary transition-colors duration-200"
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.15 + i * 0.07 }}
+                className="text-sm font-medium text-ink/45 hover:text-primary transition-colors duration-200 relative group"
               >
                 {l.label}
-              </a>
+                <span className="absolute -bottom-0.5 left-0 right-0 h-px bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
+              </motion.a>
             ))}
-            <a
+            <motion.a
               href="mailto:jersonlumpas23@gmail.com"
-              className="text-sm font-semibold bg-ink text-white px-5 py-2 rounded-full hover:bg-primary transition-all duration-200"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.45 }}
+              className="text-sm font-semibold bg-ink text-white px-5 py-2 rounded-full hover:bg-primary transition-all duration-250 shadow-md shadow-ink/10"
             >
               Hire Me
-            </a>
+            </motion.a>
           </motion.nav>
         </div>
       </header>
 
       {/* ── HERO ────────────────────────────────────────────────────────── */}
       <section
+        ref={heroRef}
         id="home"
         className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-16 overflow-hidden"
       >
-        {/* Bg blobs */}
+        {/* Parallax orbs */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-16 right-[5%] w-[480px] h-[480px] rounded-full bg-primary/10 blur-3xl animate-float" />
-          <div className="absolute bottom-16 left-[5%] w-[400px] h-[400px] rounded-full bg-accent/15 blur-3xl animate-float-b" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] rounded-full bg-primary/5 blur-3xl animate-float-c" />
+          <motion.div
+            style={{ y: orbY1 }}
+            className="absolute top-16 right-[5%] w-[520px] h-[520px] rounded-full bg-primary/15 blur-3xl animate-float"
+          />
+          <motion.div
+            style={{ y: orbY2 }}
+            className="absolute bottom-16 left-[5%] w-[420px] h-[420px] rounded-full bg-accent/20 blur-3xl animate-float-b"
+          />
+          <motion.div
+            style={{ y: orbY3 }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-primary/8 blur-3xl animate-float-c"
+          />
 
           {/* Watermark */}
-          <div className="absolute inset-0 flex items-center justify-center select-none pointer-events-none">
-            <span
-              className="font-display font-black leading-none tracking-tighter text-[22vw] text-primary/[0.04]"
-              aria-hidden
-            >
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.5, delay: 0.5 }}
+            className="absolute inset-0 flex items-center justify-center select-none"
+          >
+            <span className="font-display font-black leading-none tracking-tighter text-[22vw] text-primary/[0.045]" aria-hidden>
               JERSON
             </span>
-          </div>
+          </motion.div>
 
-          {/* Subtle dot grid */}
+          {/* Dot grid */}
           <div
-            className="absolute inset-0 opacity-[0.025]"
+            className="absolute inset-0 opacity-[0.04]"
             style={{
               backgroundImage: "radial-gradient(circle, #1E2235 1px, transparent 1px)",
               backgroundSize: "28px 28px",
@@ -280,44 +435,60 @@ export default function Portfolio() {
           />
         </div>
 
-        {/* Content */}
+        {/* Hero content */}
         <div className="relative z-10 max-w-4xl mx-auto text-center">
+
           {/* Status badge */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.1 }}
-            className="inline-flex items-center gap-2 bg-white border border-primary/20 rounded-full px-4 py-1.5 text-sm text-primary font-semibold mb-8 shadow-sm shadow-primary/10"
+            initial={{ opacity: 0, y: 20, scale: 0.92 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-primary/20 rounded-full px-4 py-1.5 text-sm text-primary font-semibold mb-8 shadow-md shadow-primary/10"
           >
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <motion.span
+              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="w-2 h-2 rounded-full bg-primary"
+            />
             4th Year BSIT · Open to Opportunities
           </motion.div>
 
-          {/* Name */}
-          <motion.h1
-            initial={{ opacity: 0, y: 32 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.75, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="font-display font-extrabold text-[clamp(3rem,10vw,6.5rem)] text-ink leading-[0.95] tracking-tight mb-6"
-          >
-            Jerson{" "}
-            <span className="relative inline-block">
-              <span className="text-primary">Lumpas</span>
-              {/* Gold underline */}
+          {/* Name — word by word reveal */}
+          <div className="font-display font-extrabold text-[clamp(3rem,10vw,6.5rem)] text-ink leading-[0.95] tracking-tight mb-6">
+            {["Jerson", "Lumpas"].map((word, wi) => (
               <motion.span
-                className="absolute -bottom-1.5 left-0 right-0 h-[5px] bg-accent rounded-full"
-                initial={{ scaleX: 0, originX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 0.9, delay: 1.0, ease: [0.22, 1, 0.36, 1] }}
-              />
-            </span>
-          </motion.h1>
+                key={word}
+                initial={{ opacity: 0, y: 40, rotateX: -20 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                transition={{
+                  duration: 0.75,
+                  delay: 0.3 + wi * 0.18,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+                className={`inline-block ${wi === 0 ? "mr-[0.2em]" : ""}`}
+              >
+                {wi === 1 ? (
+                  <span className="relative inline-block text-primary">
+                    {word}
+                    <motion.span
+                      initial={{ scaleX: 0, originX: 0 }}
+                      animate={{ scaleX: 1 }}
+                      transition={{ duration: 0.9, delay: 1.0, ease: [0.22, 1, 0.36, 1] }}
+                      className="absolute -bottom-1.5 left-0 right-0 h-[5px] bg-accent rounded-full"
+                    />
+                  </span>
+                ) : (
+                  word
+                )}
+              </motion.span>
+            ))}
+          </div>
 
           {/* Role */}
           <motion.p
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
+            initial={{ opacity: 0, y: 18, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 0.65, delay: 0.55 }}
             className="text-xl md:text-2xl font-display font-semibold text-ink/40 mb-4"
           >
             Full-Stack &amp; Mobile Developer
@@ -325,38 +496,40 @@ export default function Portfolio() {
 
           {/* Tagline */}
           <motion.p
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.52 }}
-            className="text-base md:text-lg text-ink/40 max-w-lg mx-auto mb-10 leading-relaxed"
+            initial={{ opacity: 0, y: 14, filter: "blur(4px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 0.65, delay: 0.68 }}
+            className="text-base md:text-lg text-ink/38 max-w-lg mx-auto mb-10 leading-relaxed"
           >
-            Building real apps that solve real problems — from volleyball courts
-            to volunteer communities.
+            Building real apps that solve real problems — from volleyball courts to volunteer communities.
           </motion.p>
 
           {/* CTAs */}
           <motion.div
-            initial={{ opacity: 0, y: 18 }}
+            initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.64 }}
+            transition={{ duration: 0.6, delay: 0.8 }}
             className="flex flex-wrap items-center justify-center gap-4"
           >
-            <a
+            <motion.a
               href="#projects"
-              className="group inline-flex items-center gap-2 bg-ink text-white font-semibold px-7 py-3.5 rounded-full hover:bg-primary transition-all duration-250 shadow-xl shadow-ink/10"
+              whileHover={{ scale: 1.04, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              className="group inline-flex items-center gap-2 bg-ink text-white font-semibold px-7 py-3.5 rounded-full shadow-xl shadow-ink/15 hover:bg-primary transition-colors duration-250"
             >
               View My Work
-              <ChevronRight
-                size={16}
-                className="group-hover:translate-x-1 transition-transform duration-200"
-              />
-            </a>
-            <a
+              <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform duration-200" />
+            </motion.a>
+            <motion.a
               href="#contact"
-              className="inline-flex items-center gap-2 bg-white text-ink font-semibold px-7 py-3.5 rounded-full border border-ink/10 hover:border-primary hover:text-primary transition-all duration-250 shadow-sm"
+              whileHover={{ scale: 1.04, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              className="inline-flex items-center gap-2 bg-white/70 backdrop-blur-sm text-ink font-semibold px-7 py-3.5 rounded-full border border-ink/10 hover:border-primary hover:text-primary transition-all duration-250 shadow-sm"
             >
               Let's Talk
-            </a>
+            </motion.a>
           </motion.div>
         </div>
 
@@ -364,15 +537,15 @@ export default function Portfolio() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.4 }}
+          transition={{ delay: 1.5 }}
           className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-ink/25"
         >
           <motion.div
-            animate={{ y: [0, 7, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            animate={{ y: [0, 8, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
             className="flex flex-col items-center gap-1"
           >
-            <span className="text-[10px] font-semibold tracking-[0.2em] uppercase">scroll</span>
+            <span className="text-[10px] font-bold tracking-[0.2em] uppercase">scroll</span>
             <ArrowDown size={13} />
           </motion.div>
         </motion.div>
@@ -383,7 +556,7 @@ export default function Portfolio() {
         <div className="max-w-6xl mx-auto">
           <Section>
             <motion.div variants={fadeUp} className="mb-16">
-              <span className="inline-block text-xs font-bold text-primary tracking-[0.18em] uppercase mb-3">
+              <span className="inline-block text-xs font-bold text-primary tracking-[0.2em] uppercase mb-3">
                 About Me
               </span>
               <h2 className="font-display font-extrabold text-4xl md:text-5xl text-ink leading-tight">
@@ -396,65 +569,65 @@ export default function Portfolio() {
             <div className="grid md:grid-cols-5 gap-10 md:gap-16 items-start">
               {/* Story */}
               <motion.div variants={fadeUp} className="md:col-span-3 space-y-5">
-                <p className="text-[1.05rem] text-ink/65 leading-relaxed">
+                <p className="text-[1.05rem] text-ink/60 leading-relaxed">
                   I'm a <strong className="text-ink font-semibold">4th year BSIT student</strong> from
                   the Philippines who doesn't just study development — I actually build and ship things.
                   Not homework projects. Real apps, with real users, solving real pain.
                 </p>
-                <p className="text-[1.05rem] text-ink/65 leading-relaxed">
-                  I built{" "}
-                  <strong className="text-primary font-semibold">Acts of Love Community</strong> — a full
+                <p className="text-[1.05rem] text-ink/60 leading-relaxed">
+                  I built <strong className="text-primary font-semibold">Acts of Love Community</strong> — a full
                   platform helping non-profit volunteer organizations manage events, track finances, and
                   keep members engaged with gamification. It's live. It's used. It matters.
                 </p>
-                <p className="text-[1.05rem] text-ink/65 leading-relaxed">
-                  Then, as a volleyball player tired of hunting across 10+ Facebook groups just to find a
-                  pickup game, I decided to fix it myself. I picked up React Native from zero and built{" "}
-                  <strong className="text-primary font-semibold">Lumba</strong> — solo, from scratch, with
-                  full IAP monetization, real-time chat, and a skill-matching system.
+                <p className="text-[1.05rem] text-ink/60 leading-relaxed">
+                  Then, as a volleyball player tired of hunting across 10+ Facebook groups just to find
+                  a pickup game, I fixed it myself. I picked up React Native from zero and built{" "}
+                  <strong className="text-primary font-semibold">Lumba</strong> — solo, from scratch,
+                  with full IAP monetization, real-time chat, and a skill-matching system.
                 </p>
-                <p className="text-[1.05rem] text-ink/65 leading-relaxed">
-                  That's who I am: someone who sees a problem, learns what it takes, and ships the
-                  solution.
+                <p className="text-[1.05rem] text-ink/60 leading-relaxed">
+                  That's who I am: someone who sees a problem, learns what it takes, and ships the solution.
                 </p>
 
                 {/* Tags */}
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {[
-                    { icon: <MapPin size={13} />, label: "Philippines" },
-                    { icon: <Trophy size={13} />, label: "Volleyball Player" },
-                    { icon: <Heart size={13} />, label: "Community Builder" },
-                    { icon: <Sparkles size={13} />, label: "Solo Dev" },
-                  ].map((t) => (
-                    <span
+                <motion.div
+                  variants={staggerFast}
+                  className="flex flex-wrap gap-2 pt-2"
+                >
+                  {TAGS.map((t) => (
+                    <motion.span
                       key={t.label}
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white border border-ink/8 text-ink/50 px-3 py-1.5 rounded-full"
+                      variants={fadeIn}
+                      whileHover={{ scale: 1.06, y: -2 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white border border-ink/8 text-ink/50 px-3 py-1.5 rounded-full shadow-sm cursor-default"
                     >
                       {t.icon}
                       {t.label}
-                    </span>
+                    </motion.span>
                   ))}
-                </div>
+                </motion.div>
               </motion.div>
 
-              {/* Stats */}
-              <motion.div variants={fadeUp} className="md:col-span-2 grid grid-cols-2 gap-3">
+              {/* Stat cards */}
+              <motion.div variants={staggerFast} className="md:col-span-2 grid grid-cols-2 gap-3">
                 {[
                   { val: "2", label: "Production Apps", sub: "Shipped & live" },
                   { val: "3", label: "Projects Built", sub: "Solo, from scratch" },
                   { val: "2026", label: "Graduating", sub: "BSIT · Philippines" },
                   { val: "∞", label: "Games Found", sub: "Thanks to Lumba" },
                 ].map((s) => (
-                  <div
+                  <motion.div
                     key={s.label}
-                    className="bg-white rounded-2xl p-5 border border-ink/5 hover:border-primary/25 hover:shadow-md hover:shadow-primary/5 transition-all duration-300"
+                    variants={fadeIn}
+                    whileHover={{ scale: 1.04, y: -3 }}
+                    transition={{ type: "spring", stiffness: 380, damping: 18 }}
+                    className="bg-white rounded-2xl p-5 border border-ink/5 hover:border-primary/25 hover:shadow-lg hover:shadow-primary/8 transition-colors duration-300 cursor-default"
                   >
-                    <div className="font-display font-extrabold text-3xl text-primary mb-1">
-                      {s.val}
-                    </div>
+                    <div className="font-display font-extrabold text-3xl text-primary mb-1">{s.val}</div>
                     <div className="font-semibold text-ink text-sm leading-tight mb-1">{s.label}</div>
                     <div className="text-ink/35 text-xs">{s.sub}</div>
-                  </div>
+                  </motion.div>
                 ))}
               </motion.div>
             </div>
@@ -463,111 +636,24 @@ export default function Portfolio() {
       </section>
 
       {/* ── PROJECTS ────────────────────────────────────────────────────── */}
-      <section id="projects" className="py-28 px-6 bg-white">
+      <section id="projects" className="py-28 px-6 bg-white/50">
         <div className="max-w-6xl mx-auto">
           <Section>
             <motion.div variants={fadeUp} className="mb-16">
-              <span className="inline-block text-xs font-bold text-primary tracking-[0.18em] uppercase mb-3">
+              <span className="inline-block text-xs font-bold text-primary tracking-[0.2em] uppercase mb-3">
                 Projects
               </span>
               <h2 className="font-display font-extrabold text-4xl md:text-5xl text-ink leading-tight mb-4">
                 Things I've Built
               </h2>
-              <p className="text-ink/45 text-lg max-w-lg">
+              <p className="text-ink/40 text-lg max-w-lg">
                 Every project here is real — live users, real infrastructure, real problems solved.
               </p>
             </motion.div>
 
             <div className="grid lg:grid-cols-3 gap-6">
               {PROJECTS.map((p, i) => (
-                <motion.article
-                  key={p.id}
-                  variants={fadeUp}
-                  transition={{ delay: i * 0.08 }}
-                  className={`group relative bg-gradient-to-b ${p.accentClass} rounded-3xl p-6 border border-ink/5 ${p.borderHover} hover:shadow-xl hover:shadow-ink/5 transition-all duration-350 flex flex-col`}
-                >
-                  {/* Category + badge */}
-                  <div className="flex flex-wrap items-center gap-2 mb-4">
-                    <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${p.categoryStyle}`}>
-                      {p.icon}
-                      {p.category}
-                    </span>
-                    {p.badge && (
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-accent/20 text-yellow-700">
-                        {p.badge}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Title */}
-                  <h3 className="font-display font-extrabold text-xl text-ink leading-tight mb-0.5">
-                    {p.title}
-                  </h3>
-                  <p className="text-primary font-semibold text-sm mb-4">{p.subtitle}</p>
-
-                  {/* Description */}
-                  <p className="text-ink/55 text-sm leading-relaxed mb-5 flex-1">
-                    {p.description}
-                  </p>
-
-                  {/* Features */}
-                  <ul className="space-y-2 mb-5">
-                    {p.features.slice(0, 4).map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-xs text-ink/55">
-                        <span className="mt-[5px] w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                        {f}
-                      </li>
-                    ))}
-                    {p.features.length > 4 && (
-                      <li className="text-xs text-ink/35 pl-3.5">
-                        +{p.features.length - 4} more features
-                      </li>
-                    )}
-                  </ul>
-
-                  {/* Tech pills */}
-                  <div className="flex flex-wrap gap-1.5 mb-5">
-                    {p.tech.slice(0, 5).map((t) => (
-                      <span
-                        key={t}
-                        className="text-[11px] font-semibold bg-white/80 text-ink/55 px-2.5 py-1 rounded-full border border-ink/6"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                    {p.tech.length > 5 && (
-                      <span className="text-[11px] font-semibold bg-white/80 text-ink/35 px-2.5 py-1 rounded-full border border-ink/6">
-                        +{p.tech.length - 5}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Links */}
-                  <div className="flex items-center gap-4 pt-4 border-t border-ink/6">
-                    {p.live && (
-                      <a
-                        href={p.live}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/70 transition-colors"
-                      >
-                        <ExternalLink size={13} />
-                        Live Site
-                      </a>
-                    )}
-                    {p.github && (
-                      <a
-                        href={p.github}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink/45 hover:text-ink transition-colors"
-                      >
-                        <Github size={13} />
-                        GitHub
-                      </a>
-                    )}
-                  </div>
-                </motion.article>
+                <ProjectCard key={p.id} p={p} index={i} />
               ))}
             </div>
           </Section>
@@ -579,7 +665,7 @@ export default function Portfolio() {
         <div className="max-w-6xl mx-auto">
           <Section>
             <motion.div variants={fadeUp} className="mb-16">
-              <span className="inline-block text-xs font-bold text-primary tracking-[0.18em] uppercase mb-3">
+              <span className="inline-block text-xs font-bold text-primary tracking-[0.2em] uppercase mb-3">
                 Skills
               </span>
               <h2 className="font-display font-extrabold text-4xl md:text-5xl text-ink leading-tight">
@@ -587,71 +673,73 @@ export default function Portfolio() {
               </h2>
             </motion.div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <motion.div variants={stagger} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {SKILL_GROUPS.map((g, i) => (
                 <motion.div
                   key={g.label}
                   variants={fadeUp}
-                  transition={{ delay: i * 0.07 }}
-                  className="bg-white rounded-2xl p-6 border border-ink/5 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+                  whileHover={{ y: -4, scale: 1.015 }}
+                  transition={{ delay: i * 0.07, type: "spring", stiffness: 350, damping: 18 }}
+                  className="bg-white rounded-2xl p-6 border border-ink/5 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/6 transition-colors duration-300"
                 >
                   <div className="flex items-center gap-3 mb-5">
-                    <span
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center font-display font-black text-base ${g.bg} ${g.color}`}
-                    >
+                    <span className={`w-9 h-9 rounded-xl flex items-center justify-center font-display font-black text-sm ${g.bg} ${g.color}`}>
                       {g.icon}
                     </span>
                     <h3 className="font-display font-bold text-ink">{g.label}</h3>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <motion.div variants={staggerFast} className="flex flex-wrap gap-2">
                     {g.skills.map((s) => (
-                      <span
+                      <motion.span
                         key={s}
-                        className="text-sm font-medium bg-[#F8F9FC] text-ink/60 px-3 py-1.5 rounded-full border border-ink/5 hover:bg-primary/8 hover:text-primary hover:border-primary/15 transition-all duration-200 cursor-default"
+                        variants={fadeIn}
+                        whileHover={{ scale: 1.08, y: -2 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                        className="text-sm font-medium bg-[#E8EBF4] text-ink/55 px-3 py-1.5 rounded-full hover:bg-primary/12 hover:text-primary transition-colors duration-200 cursor-default"
                       >
                         {s}
-                      </span>
+                      </motion.span>
                     ))}
-                  </div>
+                  </motion.div>
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           </Section>
         </div>
       </section>
 
       {/* ── CONTACT ─────────────────────────────────────────────────────── */}
-      <section id="contact" className="py-28 px-6 bg-ink">
-        <div className="max-w-3xl mx-auto text-center">
+      <section id="contact" className="py-28 px-6 bg-ink overflow-hidden relative">
+        {/* Bg glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/10 blur-3xl rounded-full" />
+          <div className="absolute bottom-0 right-0 w-[400px] h-[200px] bg-accent/8 blur-3xl rounded-full" />
+        </div>
+
+        <div className="relative max-w-3xl mx-auto text-center">
           <Section>
-            {/* Eyebrow */}
-            <motion.span
-              variants={fadeUp}
-              className="inline-block text-xs font-bold text-primary tracking-[0.18em] uppercase mb-4"
-            >
+            <motion.span variants={fadeUp} className="inline-block text-xs font-bold text-primary tracking-[0.2em] uppercase mb-4">
               Contact
             </motion.span>
 
-            {/* Heading */}
-            <motion.h2
-              variants={fadeUp}
-              className="font-display font-extrabold text-4xl md:text-[3.5rem] text-white leading-tight mb-5"
-            >
+            <motion.h2 variants={fadeUp} className="font-display font-extrabold text-4xl md:text-[3.5rem] text-white leading-tight mb-5">
               Let's Build Something
               <br />
               <span className="text-primary">Together</span>
             </motion.h2>
 
-            {/* Body */}
-            <motion.p variants={fadeUp} className="text-white/35 text-lg mb-10 max-w-sm mx-auto leading-relaxed">
-              I'm graduating soon and open to work — jobs, freelance, or interesting projects. Let's talk.
+            <motion.p variants={fadeUp} className="text-white/30 text-lg mb-10 max-w-sm mx-auto leading-relaxed">
+              Graduating soon and open to work — jobs, freelance, or interesting projects. Let's talk.
             </motion.p>
 
             {/* Email CTA */}
             <motion.a
               variants={fadeUp}
               href="mailto:jersonlumpas23@gmail.com"
-              className="inline-flex items-center gap-3 bg-primary text-white font-semibold text-base px-8 py-4 rounded-full hover:bg-primary/80 transition-all duration-200 shadow-2xl shadow-primary/30 mb-14"
+              whileHover={{ scale: 1.05, y: -3 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 380, damping: 16 }}
+              className="inline-flex items-center gap-3 bg-primary text-white font-semibold text-base px-8 py-4 rounded-full shadow-2xl shadow-primary/40 mb-14 hover:bg-primary/85 transition-colors duration-200"
             >
               <Mail size={18} />
               jersonlumpas23@gmail.com
@@ -660,29 +748,30 @@ export default function Portfolio() {
             {/* Divider */}
             <motion.div variants={fadeUp} className="flex items-center gap-4 max-w-xs mx-auto mb-10">
               <div className="flex-1 h-px bg-white/8" />
-              <span className="text-white/20 text-xs font-semibold tracking-widest uppercase">or find me on</span>
+              <span className="text-white/18 text-xs font-bold tracking-widest uppercase">or find me on</span>
               <div className="flex-1 h-px bg-white/8" />
             </motion.div>
 
             {/* Socials */}
-            <motion.div
-              variants={fadeUp}
-              className="flex items-center justify-center gap-8"
-            >
+            <motion.div variants={staggerFast} className="flex items-center justify-center gap-6">
               {SOCIALS.map(({ icon: Icon, href, label }) => (
-                <a
+                <motion.a
                   key={label}
+                  variants={fadeIn}
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="group flex flex-col items-center gap-2 text-white/25 hover:text-white transition-all duration-200"
+                  whileHover={{ scale: 1.12, y: -4 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                  className="group flex flex-col items-center gap-2 text-white/25 hover:text-white transition-colors duration-200"
                 >
-                  <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/30 transition-all duration-200">
+                  <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center group-hover:bg-primary/25 group-hover:border-primary/35 transition-all duration-200">
                     <Icon size={18} />
                   </div>
-                  <span className="text-[11px] font-medium">{label}</span>
-                </a>
+                  <span className="text-[11px] font-semibold">{label}</span>
+                </motion.a>
               ))}
             </motion.div>
           </Section>
@@ -691,8 +780,8 @@ export default function Portfolio() {
 
       {/* ── FOOTER ──────────────────────────────────────────────────────── */}
       <footer className="bg-ink border-t border-white/5 py-6 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-white/20 text-sm">
-          <span className="font-display font-extrabold text-base text-white/30">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-white/18 text-sm">
+          <span className="font-display font-extrabold text-base text-white/25">
             JL<span className="text-primary">.</span>
           </span>
           <span>© 2026 Jerson Lumpas · Built with Next.js &amp; Tailwind CSS</span>
