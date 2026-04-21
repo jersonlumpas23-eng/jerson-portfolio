@@ -6,6 +6,7 @@ import {
   useScroll,
   useTransform,
   useSpring,
+  useMotionValue,
   AnimatePresence,
 } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
@@ -217,106 +218,90 @@ function Section({ children, className = "" }: { children: React.ReactNode; clas
   );
 }
 
-function ProjectCard({ p, index }: { p: (typeof PROJECTS)[0]; index: number }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <motion.article
-      variants={fadeUp}
-      transition={{ delay: index * 0.1 }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        boxShadow: hovered
-          ? `0 20px 50px ${p.glowColor}, 0 4px 20px rgba(0,0,0,0.06)`
-          : "0 2px 8px rgba(0,0,0,0.04)",
-      }}
-      className="group relative bg-white rounded-3xl p-6 border border-ink/5 hover:border-primary/20 transition-all duration-400 flex flex-col cursor-default"
-    >
-      {/* Top glow accent */}
-      <motion.div
-        animate={{ opacity: hovered ? 1 : 0 }}
-        transition={{ duration: 0.3 }}
-        className="absolute inset-x-0 top-0 h-1 rounded-t-3xl bg-gradient-to-r from-primary/60 via-primary to-accent/60"
-      />
+// 3D tilt + floating mockup
+function Mockup3D({ src, alt }: { src: string; alt: string }) {
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const cfg = { stiffness: 180, damping: 22 };
+  const rotateX = useSpring(useTransform(mouseY, [-130, 130], [10, -10]), cfg);
+  const rotateY = useSpring(useTransform(mouseX, [-130, 130], [-10, 10]), cfg);
 
-      {/* Category + badge */}
+  const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    mouseX.set(e.clientX - (r.left + r.width / 2));
+    mouseY.set(e.clientY - (r.top + r.height / 2));
+  };
+  const onLeave = () => { mouseX.set(0); mouseY.set(0); };
+
+  return (
+    <motion.div
+      onMouseMove={onMove}
+      onMouseLeave={onLeave}
+      style={{ perspective: 900, rotateX, rotateY }}
+      animate={{ y: [0, -14, 0] }}
+      transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", repeatType: "mirror" }}
+      className="cursor-default"
+    >
+      {/* Glow shadow under mockup */}
+      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-primary/20 blur-2xl rounded-full" />
+      <img
+        src={src}
+        alt={alt}
+        className="relative w-full drop-shadow-2xl select-none"
+        draggable={false}
+      />
+    </motion.div>
+  );
+}
+
+// Reusable project detail block
+function ProjectDetails({ p, hovered }: { p: (typeof PROJECTS)[0]; hovered: boolean }) {
+  return (
+    <>
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${p.categoryStyle}`}>
-          {p.icon}
-          {p.category}
+          {p.icon}{p.category}
         </span>
         {p.badge && (
-          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-accent/20 text-yellow-700">
-            {p.badge}
-          </span>
+          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-accent/20 text-yellow-700">{p.badge}</span>
         )}
       </div>
-
-      <h3 className="font-display font-extrabold text-xl text-ink leading-tight mb-0.5">
-        {p.title}
-      </h3>
+      <h3 className="font-display font-extrabold text-2xl text-ink leading-tight mb-0.5">{p.title}</h3>
       <p className="text-primary font-semibold text-sm mb-4">{p.subtitle}</p>
-      <p className="text-ink/50 text-sm leading-relaxed mb-5 flex-1">{p.description}</p>
-
-      {/* Features */}
+      <p className="text-ink/50 text-sm leading-relaxed mb-5">{p.description}</p>
       <ul className="space-y-2 mb-5">
         {p.features.slice(0, 4).map((f, i) => (
-          <motion.li
-            key={f}
-            initial={{ opacity: 0, x: -8 }}
-            animate={hovered ? { opacity: 1, x: 0 } : { opacity: 0.6, x: 0 }}
-            transition={{ duration: 0.25, delay: i * 0.04 }}
+          <motion.li key={f}
+            animate={hovered ? { opacity: 1, x: 0 } : { opacity: 0.55, x: 0 }}
+            transition={{ duration: 0.2, delay: i * 0.04 }}
             className="flex items-start gap-2 text-xs text-ink/55"
           >
-            <span className="mt-[5px] w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-            {f}
+            <span className="mt-[5px] w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />{f}
           </motion.li>
         ))}
-        {p.features.length > 4 && (
-          <li className="text-xs text-ink/30 pl-3.5">+{p.features.length - 4} more</li>
-        )}
+        {p.features.length > 4 && <li className="text-xs text-ink/30 pl-3.5">+{p.features.length - 4} more</li>}
       </ul>
-
-      {/* Tech pills */}
       <div className="flex flex-wrap gap-1.5 mb-5">
-        {p.tech.slice(0, 5).map((t) => (
-          <span key={t} className="text-[11px] font-semibold bg-[#E8EBF4] text-ink/55 px-2.5 py-1 rounded-full">
-            {t}
-          </span>
+        {p.tech.slice(0, 6).map((t) => (
+          <span key={t} className="text-[11px] font-semibold bg-[#E8EBF4] text-ink/55 px-2.5 py-1 rounded-full">{t}</span>
         ))}
-        {p.tech.length > 5 && (
-          <span className="text-[11px] font-semibold bg-[#E8EBF4] text-ink/30 px-2.5 py-1 rounded-full">
-            +{p.tech.length - 5}
-          </span>
-        )}
+        {p.tech.length > 6 && <span className="text-[11px] font-semibold bg-[#E8EBF4] text-ink/30 px-2.5 py-1 rounded-full">+{p.tech.length - 6}</span>}
       </div>
-
-      {/* Links */}
       <div className="flex items-center gap-4 pt-4 border-t border-ink/6">
         {p.live && (
-          <a
-            href={p.live}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/70 transition-colors"
-          >
-            <ExternalLink size={13} />
-            Live Site
+          <a href={p.live} target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/70 transition-colors">
+            <ExternalLink size={13} />Live Site
           </a>
         )}
         {p.github && (
-          <a
-            href={p.github}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink/40 hover:text-ink transition-colors"
-          >
-            <Github size={13} />
-            GitHub
+          <a href={p.github} target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink/40 hover:text-ink transition-colors">
+            <Github size={13} />GitHub
           </a>
         )}
       </div>
-    </motion.article>
+    </>
   );
 }
 
@@ -639,22 +624,89 @@ export default function Portfolio() {
       <section id="projects" className="py-28 px-6 bg-white/50">
         <div className="max-w-6xl mx-auto">
           <Section>
+            {/* Heading */}
             <motion.div variants={fadeUp} className="mb-16">
-              <span className="inline-block text-xs font-bold text-primary tracking-[0.2em] uppercase mb-3">
-                Projects
-              </span>
-              <h2 className="font-display font-extrabold text-4xl md:text-5xl text-ink leading-tight mb-4">
-                Things I've Built
-              </h2>
-              <p className="text-ink/40 text-lg max-w-lg">
-                Every project here is real — live users, real infrastructure, real problems solved.
-              </p>
+              <span className="inline-block text-xs font-bold text-primary tracking-[0.2em] uppercase mb-3">Projects</span>
+              <h2 className="font-display font-extrabold text-4xl md:text-5xl text-ink leading-tight mb-4">Things I've Built</h2>
+              <p className="text-ink/40 text-lg max-w-lg">Every project here is real — live users, real infrastructure, real problems solved.</p>
             </motion.div>
 
-            <div className="grid lg:grid-cols-3 gap-6">
-              {PROJECTS.map((p, i) => (
-                <ProjectCard key={p.id} p={p} index={i} />
-              ))}
+            {/* ── FEATURED: AOLC Web ── */}
+            <motion.div
+              variants={fadeUp}
+              className="mb-6 bg-white rounded-3xl overflow-hidden border border-ink/5 hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/8 transition-all duration-400 group"
+            >
+              <div className="grid md:grid-cols-2">
+                {/* Left — details */}
+                <div className="p-8 md:p-10 flex flex-col justify-center">
+                  <ProjectDetails p={PROJECTS[0]} hovered={false} />
+                </div>
+                {/* Right — 3D web mockup */}
+                <div className="relative bg-gradient-to-br from-primary/8 via-primary/5 to-accent/10 p-8 md:p-10 flex items-center justify-center min-h-[320px] overflow-hidden">
+                  {/* BG blobs */}
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
+                  <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/10 rounded-full blur-3xl" />
+                  <div className="relative w-full max-w-sm">
+                    <Mockup3D src="/mockup-web.png" alt="AOLC Web App" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* ── GRID: AOLC Mobile + Lumba ── */}
+            <div className="grid md:grid-cols-2 gap-6">
+
+              {/* AOLC Mobile — gradient card, no mockup image */}
+              <motion.div
+                variants={fadeUp}
+                transition={{ delay: 0.1 }}
+                className="bg-white rounded-3xl overflow-hidden border border-ink/5 hover:border-accent/30 hover:shadow-xl hover:shadow-accent/8 transition-all duration-400 flex flex-col group"
+              >
+                {/* Top visual — gradient with floating badges */}
+                <div className="relative bg-gradient-to-br from-accent/15 via-yellow-50 to-primary/10 p-8 flex items-center justify-center min-h-[200px] overflow-hidden">
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute top-4 right-4 w-32 h-32 bg-accent/20 rounded-full blur-2xl animate-float" />
+                    <div className="absolute bottom-2 left-6 w-24 h-24 bg-primary/10 rounded-full blur-2xl animate-float-b" />
+                  </div>
+                  <div className="relative flex flex-wrap justify-center gap-2">
+                    {["Biometric Auth", "QR Scanner", "Push Notifications", "Real-time Feed", "Offline Cache"].map((f) => (
+                      <motion.span
+                        key={f}
+                        animate={{ y: [0, -4, 0] }}
+                        transition={{ duration: 3 + Math.random() * 2, repeat: Infinity, ease: "easeInOut" }}
+                        className="text-xs font-bold bg-white/80 backdrop-blur-sm text-ink/60 px-3 py-1.5 rounded-full border border-ink/8 shadow-sm"
+                      >
+                        {f}
+                      </motion.span>
+                    ))}
+                  </div>
+                </div>
+                {/* Details */}
+                <div className="p-7 flex flex-col flex-1">
+                  <ProjectDetails p={PROJECTS[1]} hovered={false} />
+                </div>
+              </motion.div>
+
+              {/* Lumba — with 3D phone mockup */}
+              <motion.div
+                variants={fadeUp}
+                transition={{ delay: 0.2 }}
+                className="bg-white rounded-3xl overflow-hidden border border-ink/5 hover:border-teal-300/50 hover:shadow-xl hover:shadow-teal-500/8 transition-all duration-400 flex flex-col group"
+              >
+                {/* Top — phone mockup */}
+                <div className="relative bg-gradient-to-br from-teal-50 via-teal-50/50 to-primary/8 p-8 flex items-center justify-center min-h-[280px] overflow-hidden">
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-teal-200/20 rounded-full blur-3xl" />
+                  <div className="absolute bottom-0 left-0 w-36 h-36 bg-primary/10 rounded-full blur-2xl" />
+                  <div className="relative w-44">
+                    <Mockup3D src="/mockup-mobile.png" alt="Lumba Mobile App" />
+                  </div>
+                </div>
+                {/* Details */}
+                <div className="p-7 flex flex-col flex-1">
+                  <ProjectDetails p={PROJECTS[2]} hovered={false} />
+                </div>
+              </motion.div>
+
             </div>
           </Section>
         </div>
