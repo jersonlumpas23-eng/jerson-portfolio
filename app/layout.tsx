@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, DM_Sans } from "next/font/google";
+import { Space_Grotesk, DM_Sans, Space_Mono } from "next/font/google";
 import "./globals.css";
 
-const jakarta = Plus_Jakarta_Sans({
+const grotesk = Space_Grotesk({
   subsets: ["latin"],
-  variable: "--font-jakarta",
-  weight: ["500", "600", "700", "800"],
+  variable: "--font-grotesk",
+  weight: ["500", "600", "700"],
   display: "swap",
 });
 
@@ -13,6 +13,13 @@ const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-dm",
   weight: ["400", "500", "600"],
+  display: "swap",
+});
+
+const spaceMono = Space_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  weight: ["400", "700"],
   display: "swap",
 });
 
@@ -51,7 +58,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${jakarta.variable} ${dmSans.variable} scroll-smooth`}>
+    <html lang="en" className={`${grotesk.variable} ${dmSans.variable} ${spaceMono.variable} scroll-smooth`}>
       <body className="font-body antialiased">{children}</body>
     </html>
   );
